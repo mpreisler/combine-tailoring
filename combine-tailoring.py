@@ -19,6 +19,7 @@
 #
 # Authors:
 #   Martin Preisler <mpreisle@redhat.com>
+#   Birol Bilgin <bbilgin@redhat.com>
 
 import argparse
 import sys
@@ -62,20 +63,37 @@ def main():
 
     benchmarks = list(input_root.findall(".//{%s}Benchmark" % (XCCDF12_NS)))
 
-    if len(benchmarks) != 1:
-        raise RuntimeError(
-            "Expected exactly one Benchmark in the file, instead found %i "
-            "benchmarks." % (len(benchmarks))
-        )
+    if len(benchmarks) == 0:
+        sys.stderr.write(
+            "There is no Benchmark elements in input file %s \n" % (args.SCAP_INPUT.name))
+        sys.exit(1)
 
-    benchmark = benchmarks[0]
+    t_profiles = tailoring_root.findall(".//{%s}Profile" % (XCCDF12_NS))
+
+    if len(t_profiles) == 0:
+        sys.stderr.write(
+            "There is no Profile elements in the tailored file %s \n" % (args.TAILORING_FILE.name))
+        sys.exit(1)
+
+    # As far as my tests goes you cannot have a tailored file that has
+    # profiles belongs to different benchmark checklists
+    # we just need to figure out which benchmark tailored profiles belongs to
+
+    b_index = -1
+    extended_profile = t_profiles[0].get("extends")
+    benchmark = None
     profile_insert_point = None
-    for profile in benchmark.findall("./{%s}Profile" % (XCCDF12_NS)):
-        profile_insert_point = profile
 
-    for profile_to_add in \
-            tailoring_root.findall(".//{%s}Profile" % (XCCDF12_NS)):
+    for i, bench in enumerate(benchmarks):
+        if b_index != -1:
+            break
+        for profile in bench.findall("./{%s}Profile" % (XCCDF12_NS)):
+            if b_index == -1 and profile.get("id") == extended_profile:
+                b_index = i
+                benchmark = benchmarks[i]
+            profile_insert_point = profile
 
+    for profile_to_add in t_profiles:
         index = list(benchmark).index(profile_insert_point)
         benchmark.insert(index + 1, profile_to_add)
         profile_insert_point = profile_to_add
