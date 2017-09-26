@@ -46,7 +46,7 @@ def main():
         help="XCCDF 1.2 Tailoring file to insert"
     )
     parser.add_argument(
-        "--output", type=argparse.FileType("w"), required=False,
+        "--output", type=argparse.FileType("wb"), required=False,
         default=sys.stdout,
         help="Resulting XCCDF or Source DataStream"
     )
