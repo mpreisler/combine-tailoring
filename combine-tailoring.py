@@ -88,7 +88,9 @@ def main():
         if b_index != -1:
             break
         for profile in bench.findall("./{%s}Profile" % (XCCDF12_NS)):
-            if b_index == -1 and profile.get("id") == extended_profile:
+            if b_index == -1 and \
+                    (profile.get("id") == extended_profile or
+                     extended_profile is None):
                 b_index = i
                 benchmark = benchmarks[i]
             profile_insert_point = profile
