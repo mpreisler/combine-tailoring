@@ -95,6 +95,15 @@ def main():
                 benchmark = benchmarks[i]
             profile_insert_point = profile
 
+    if profile_insert_point is None:
+        sys.stderr.write(
+            "Couldn't find a suitable Profile insert point in the input file. "
+            "Please check the @extends attribute in your tailoring file to "
+            "make sure there is a matching profile in the input file. "
+            "Make sure there is at least one profile in the input file. It can "
+            "be empty or have just one select.")
+        sys.exit(1)
+
     for profile_to_add in t_profiles:
         index = list(benchmark).index(profile_insert_point)
         benchmark.insert(index + 1, profile_to_add)
