@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 # Copyright 2016 Red Hat Inc., Durham, North Carolina.
 # All Rights Reserved.
@@ -21,8 +21,12 @@
 #   Martin Preisler <mpreisle@redhat.com>
 #   Birol Bilgin <bbilgin@redhat.com>
 
+from __future__ import print_function
+
 import argparse
 import sys
+from io import BytesIO
+
 try:
     from xml.etree import cElementTree as ElementTree
 except ImportError:
@@ -47,7 +51,7 @@ def main():
     )
     parser.add_argument(
         "--output", type=argparse.FileType("wb"), required=False,
-        default=sys.stdout,
+        default=None,
         help="Resulting XCCDF or Source DataStream"
     )
 
@@ -64,15 +68,17 @@ def main():
     benchmarks = list(input_root.findall(".//{%s}Benchmark" % (XCCDF12_NS)))
 
     if len(benchmarks) == 0:
-        sys.stderr.write(
-            "There is no Benchmark elements in input file %s \n" % (args.SCAP_INPUT.name))
+        print(
+            "There is no Benchmark elements in input file '%s'" % (args.SCAP_INPUT.name),
+            file=sys.stderr)
         sys.exit(1)
 
     t_profiles = tailoring_root.findall(".//{%s}Profile" % (XCCDF12_NS))
 
     if len(t_profiles) == 0:
-        sys.stderr.write(
-            "There is no Profile elements in the tailored file %s \n" % (args.TAILORING_FILE.name))
+        print(
+            "There is no Profile elements in the tailored file '%s'" % (args.TAILORING_FILE.name),
+            file=sys.stderr)
         sys.exit(1)
 
     # As far as my tests goes you cannot have a tailored file that has
@@ -96,12 +102,13 @@ def main():
             profile_insert_point = profile
 
     if profile_insert_point is None:
-        sys.stderr.write(
+        print(
             "Couldn't find a suitable Profile insert point in the input file. "
             "Please check the @extends attribute in your tailoring file to "
             "make sure there is a matching profile in the input file. "
             "Make sure there is at least one profile in the input file. It can "
-            "be empty or have just one select.")
+            "be empty or have just one select.",
+            file=sys.stderr)
         sys.exit(1)
 
     for profile_to_add in t_profiles:
@@ -109,7 +116,12 @@ def main():
         benchmark.insert(index + 1, profile_to_add)
         profile_insert_point = profile_to_add
 
-    input_tree.write(args.output)
+    if args.output:
+        input_tree.write(args.output)
+    else:
+        output = BytesIO()
+        input_tree.write(output)
+        sys.stdout.write(output.getvalue().decode("utf8"))
 
 
 if __name__ == "__main__":
